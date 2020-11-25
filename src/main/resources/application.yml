@@ -1,0 +1,132 @@
+server:
+  port: 9001
+spring:
+  application:
+    name: gateway-nacos
+  redis:
+    host: 47.101.31.55
+    password: YwL$RdX@*tj!rLy6
+    port: 6379
+  cloud:
+    nacos:
+      discovery:
+        server-addr: s0.xzs.adorsmart.com:8848,s1.xzs.adorsmart.com:8848,s2.xzs.adorsmart.com:8848
+        namespace: 9ca064bf-1b0d-4108-865a-5df310db6b7b
+    gateway:
+      default-filters:
+      - name: Hystrix
+        args:
+          name: fallbackcmd1
+          fallbackUri: forward:/fallback
+      routes:
+      - id: ador_pay_route
+        uri: lb://adorgroup-pay
+        predicates:
+        #- After=2020-01-20T17:42:47.789-07:00[America/Denver]                  #  设定时间之前无法访问后面路由
+        - Path=/pay/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50  #允许用户每秒处理多少个请求
+            redis-rate-limiter.burstCapacity: 100   #令牌桶的容量，允许在一秒钟内完成的最大请求数
+      - id: ador_shop_admin_route
+        uri: lb://adorgroup-shop-admin
+        predicates:
+        - Path=/shopAdmin/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+      - id: ador_shop_shp_admin_route
+        uri: lb://adorgroup-shop-shp-admin
+        predicates:
+        - Path=/shopShpAdmin/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+      - id: ador_shop_shp_admin_cms_route
+        uri: lb://adorgroup-shop-shp-admin-cms
+        predicates:
+        - Path=/shopShpAdminCms/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+      - id: ador_shop_admin_route
+        uri: lb://adorgroup-shop-admin
+        predicates:
+        - Path=/shopAdmin/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+      - id: ador_shop_app_cms_route
+        uri: lb://adorgroup-shop-app-cms
+        predicates:
+        - Path=/shopAppCms/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+      - id: ador_shop_cart_route
+        uri: lb://adorgroup-shop-cart
+        predicates:
+        - Path=/shopCart/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 100
+            redis-rate-limiter.burstCapacity: 200
+      - id: ador_auth_route
+        uri: lb://adorgroup-authcenter
+        predicates:
+        - Path=/auth/**
+        filters:
+        - StripPrefix=1
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@ipKeyResolver}"
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+
+logging:
+  path: /var/logs/gateway
+
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 15000
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
